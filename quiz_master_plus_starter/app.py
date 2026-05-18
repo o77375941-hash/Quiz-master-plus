@@ -1,5 +1,5 @@
 import gradio as gr
-from utils import start_quiz, check_answer, skip_question, restart_quiz, get_progress, QuizState # type: ignore # type ignore
+from utils import start_quiz, check_answer, skip_question, restart_quiz, get_progress, QuizState, get_random_category_difficulty # type: ignore # type ignore
 
 # =========================
 # Quiz Master Plus — UI (Gradio)
@@ -10,8 +10,8 @@ with gr.Blocks(title="Quiz Master Plus") as demo:
 
     # --- Sélecteurs ---
     with gr.Row():
-        category_dd = gr.Dropdown(["Culture", "Maths", "Python"], value="Culture", label="Catégorie")
-        difficulty_dd = gr.Dropdown(["Facile", "Moyen", "Difficile"], value="Facile", label="Difficulté")
+        category_dd = gr.Dropdown(["Aléatoire", "Culture", "Maths", "Python"], value="Culture", label="Catégorie")
+        difficulty_dd = gr.Dropdown(["Aléatoire", "Facile", "Moyen", "Difficile"], value="Facile", label="Difficulté")
 
     # --- State ---
     state = gr.State(QuizState())
@@ -36,6 +36,15 @@ with gr.Blocks(title="Quiz Master Plus") as demo:
     # Callbacks
     # =========================
     def on_start(category, difficulty): # type: ignore # pyright: ignore[reportUnknownParameterType] # type: ignore  # type : ignore 
+        # Si l'utilisateur a choisi "Aléatoire" pour la catégorie ou la difficulté,
+        # remplacer par un tirage aléatoire valide.
+        if category == "Aléatoire" or difficulty == "Aléatoire":
+            rnd_cat, rnd_diff = get_random_category_difficulty()
+            if category == "Aléatoire":
+                category = rnd_cat
+            if difficulty == "Aléatoire":
+                difficulty = rnd_diff
+
         q, st, fb = start_quiz(category, difficulty) # type: ignore
         progress, score = get_progress(st) # type: ignore
         return q, "", fb, progress, score, st # type: ignore # type : ignore 

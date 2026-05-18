@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional
+import random
 
 # =========================
 # 1) QUESTIONS (TODO)
@@ -112,8 +113,39 @@ def check_answer(user_answer: str, st: QuizState) -> Tuple[str, QuizState, str]:
     - si fini: retourner message final score+badge
     TODO : implémenter.
     """
-    # TODO: implémenter cette fonction
-    return "TODO", st, "TODO"
+    questions = get_questions(st.category, st.difficulty)
+    if st.total <= 0:
+        return "Pas de questions 😅", st, "Ajoute des questions dans utils.py"
+
+    # Already finished
+    if st.index >= st.total:
+        return f"Quiz terminé! Score: {st.score}/{st.total} — {get_badge(st.score, st.total)}", st, "Quiz terminé 🎉"
+
+    # Require a non-empty answer
+    if not (user_answer or "").strip():
+        return questions[st.index][0], st, "Veuillez entrer une réponse avant de valider."
+
+    correct_answer = normalize(questions[st.index][1])
+    given = normalize(user_answer)
+
+    if given == correct_answer:
+        st.score += 1
+        feedback = "✅ Correct!"
+    else:
+        feedback = f"❌ Incorrect. Réponse correcte : {questions[st.index][1]}"
+        if st.mistakes is None:
+            st.mistakes = []
+        st.mistakes.append((questions[st.index][0], user_answer, questions[st.index][1]))
+
+    # Advance to next question
+    st.index += 1
+
+    # If finished, return final summary as the 'question' text
+    if st.index >= st.total:
+        return f"Quiz terminé! Score: {st.score}/{st.total} — {get_badge(st.score, st.total)}", st, feedback
+
+    # Otherwise return next question
+    return questions[st.index][0], st, feedback
 
 def skip_question(st: QuizState) -> Tuple[str, QuizState, str]:
     """
@@ -122,9 +154,36 @@ def skip_question(st: QuizState) -> Tuple[str, QuizState, str]:
     - si fini: message final score+badge
     TODO : implémenter.
     """
-    # TODO: implémenter cette fonction
-    return "TODO", st, "TODO"
+    questions = get_questions(st.category, st.difficulty)
+    if st.total <= 0:
+        return "Pas de questions 😅", st, "Ajoute des questions dans utils.py"
+
+    # Already finished
+    if st.index >= st.total:
+        return f"Quiz terminé! Score: {st.score}/{st.total} — {get_badge(st.score, st.total)}", st, "Quiz terminé 🎉"
+
+    # Move to next question without changing score
+    st.index += 1
+    feedback = "⏭️ Question passée"
+
+    if st.index >= st.total:
+        return f"Quiz terminé! Score: {st.score}/{st.total} — {get_badge(st.score, st.total)}", st, feedback
+
+    return questions[st.index][0], st, feedback
 
 def restart_quiz(st: QuizState) -> Tuple[str, QuizState, str]:
     """Recommencer le quiz avec la même catégorie/difficulté."""
     return start_quiz(st.category, st.difficulty)
+
+
+def get_random_category_difficulty() -> Tuple[str, str]:
+    """Retourne un couple (category, difficulty) choisi aléatoirement
+    à partir de `QUESTIONS_BY_LEVEL`.
+    """
+    categories = list(QUESTIONS_BY_LEVEL.keys())
+    if not categories:
+        return "Culture", "Facile"
+    category = random.choice(categories)
+    difficulties = list(QUESTIONS_BY_LEVEL.get(category, {}).keys())
+    difficulty = random.choice(difficulties) if difficulties else "Facile"
+    return category, difficulty
